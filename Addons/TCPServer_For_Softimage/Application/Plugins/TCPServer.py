@@ -18,7 +18,7 @@ it's written in **Python**.
 	| Some examples exists, especially on `XSI-Blog <http://www.softimageblog.com/archives/132>`_
 	unfortunately they don't work anymore with current **Autodesk Softimage** releases,
 	resulting in application getting blocked while the code is executed.
-	| To prevent this the :class:`TCPServer`class code is executed in a separate thread using the 
+	| To prevent this the :class:`TCPServer`class code is executed in a separate thread using the
 	:mod:`SocketServer`.
 	| One of the major issue encountered while implementing the server was because the client code was getting executed
 	into the server thread resulting in random application crashes.
@@ -112,7 +112,6 @@ import inspect
 import os
 import re
 import socket
-import itertools
 import threading
 from win32com.client import constants as siConstants
 
@@ -202,15 +201,13 @@ class DefaultStackDataRequestsHandler(SocketServer.BaseRequestHandler):
 			data = Runtime.requestsStack.popleft().strip()
 			if os.path.exists(data):
 				value = Application.ExecuteScript(data)
-				Application.LogMessage("{0} | Request return value: '{1}'.".format(
-				Constants.name, value), siConstants.siVerbose)
+				Application.LogMessage("%s | Request return value: '%s'." % (Constants.name, value), siConstants.siVerbose)
 			else:
 				for language in Constants.languages:
-					match = re.match(r"\s*(?P<language>{0})\s*\|(?P<code>.*)".format(language), data)
+					match = re.match(r"\s*(?P<language>%s)\s*\|(?P<code>.*)" % language, data)
 					if match:
 						value = Application.ExecuteScriptCode(match.group("code"), match.group("language"))
-						Application.LogMessage("{0} | Request return value: '{1}'.".format(
-						Constants.name, value), siConstants.siVerbose)
+						Application.LogMessage("%s | Request return value: '%s'." % (Constants.name, value), siConstants.siVerbose)
 						break
 		return True
 
@@ -244,8 +241,7 @@ class PythonStackDataRequestsHandler(SocketServer.BaseRequestHandler):
 	def processData():
 		while Runtime.requestsStack:
 			value = Application.ExecuteScriptCode(Runtime.requestsStack.popleft(), "Python")
-			Application.LogMessage("{0} | Request return value: '{1}'.".format(
-			Constants.name, value), siConstants.siVerbose)
+			Application.LogMessage("%s | Request return value: '%s'." % (Constants.name, value), siConstants.siVerbose)
 		return True
 
 class Constants(object):
@@ -289,69 +285,64 @@ class TCPServer(object):
 	#******************************************************************************************************************
 	#***	Attributes properties.
 	#******************************************************************************************************************
-	@property
-	def address(self):
+
+	def address_get(self):
 		return self.__address
 
-	@address.setter
-	def address(self, value):
+	def address_set(self, value):
 		if value is not None:
-			assert type(value) in (str, unicode), "'{0}' attribute: '{1}' type is not 'str' or 'unicode'!".format(
-			"address", value)
+			assert type(value) in (str, unicode), "'%s' attribute: '%s' type is not 'str' or 'unicode'!" % ("address", value)
 		self.__address = value
 
-	@address.deleter
-	def address(self):
-		raise ProgrammingError("{0} | '{1}' attribute is not deletable!".format(self.__class__.__name__, "address"))
+	def address_delete(self):
+		raise ProgrammingError("%s | '%s' attribute is not deletable!" % (self.__class__.__name__, "address"))
 
-	@property
-	def port(self):
+	address = property(address_get,address_set,address_delete)
+
+	def port_get(self):
 		return self.__port
 
-	@port.setter
-	def port(self, value):
+	def port_set(self, value):
 		if value is not None:
-			assert type(value) is int, "'{0}' attribute: '{1}' type is not 'int'!".format(
-			"port", value)
+			assert type(value) is int, "'%s' attribute: '%s' type is not 'int'!" % ("port", value)
 		self.__port = value
 
-	@port.deleter
-	def port(self):
-		raise ProgrammingError("{0} | '{1}' attribute is not deletable!".format(self.__class__.__name__, "port"))
+	def port_delete(self):
+		raise ProgrammingError("%s | '%s' attribute is not deletable!" % (self.__class__.__name__, "port"))
 
-	@property
-	def handler(self):
+	port = property(port_get,port_set,port_delete)
+
+	def handler_get(self):
 		return self.__handler
 
-	@handler.setter
-	def handler(self, value):
+	def handler_set(self, value):
 		if value is not None:
 			assert issubclass(value, SocketServer.BaseRequestHandler), \
-			"'{0}' attribute: '{1}' is not 'SocketServer.BaseRequestHandler' subclass!".format("handler", value)
+			"'%s' attribute: '%s' is not 'SocketServer.BaseRequestHandler' subclass!" % ("handler", value)
 		self.__handler = value
 
-	@handler.deleter
-	def handler(self):
-		raise ProgrammingError("{0} | '{1}' attribute is not deletable!".format(self.__class__.__name__, "handler"))
+	def handler_delete(self):
+		raise ProgrammingError("%s | '%s' attribute is not deletable!" % (self.__class__.__name__, "handler"))
 
-	@property
-	def online(self):
+	handler = property(handler_get,handler_set,handler_delete)
+
+	def online_get(self):
 		return self.__online
 
-	@online.setter
-	def online(self, value):
-		raise ProgrammingError("{0} | '{1}' attribute is read only!".format(self.__class__.__name__, "online"))
+	def online_set(self, value):
+		raise ProgrammingError("%s | '%s' attribute is read only!" % (self.__class__.__name__, "online"))
 
-	@online.deleter
-	def online(self):
-		raise ProgrammingError("{0} | '{1}' attribute is not deletable!".format(self.__class__.__name__, "online"))
+	def online_delete(self):
+		raise ProgrammingError("%s | '%s' attribute is not deletable!" % (self.__class__.__name__, "online"))
+
+	online = property(online_get,online_set,online_delete)
 
 	#******************************************************************************************************************
 	#***	Class methods.
 	#******************************************************************************************************************
 	def start(self):
 		if self.__online:
-			raise ServerOperationError("{0} | '{1}' server is already online!".format(self.__class__.__name__, self))
+			raise ServerOperationError("%s | '%s' server is already online!" % (self.__class__.__name__, self))
 
 		try:
 			self.__server = SocketServer.TCPServer((self.__address, self.__port), self.__handler)
@@ -360,29 +351,27 @@ class TCPServer(object):
 			self.__worker.start()
 			self.__online = True
 			Application.LogMessage(
-			"{0} | Server successfully started on '{1}' address and '{2}' port using '{3}' requests handler!".format(
-			self.__class__.__name__, self.__address, self.__port, self.__handler.__name__),
+			"%s | Server successfully started on '%s' address and '%s' port using '%s' requests handler!" % (self.__class__.__name__, self.__address, self.__port, self.__handler.__name__),
 			siConstants.siInfo)
 			return True
-		except socket.error as error:
-			if error.errno == 10048:
+		except socket.error:
+			if socket.error.errno == 10048:
 				Application.LogMessage(
-				"{0} | Cannot start server, a connection is already opened on port '{2}'!".format(
-				self.__class__.__name__, self, self.__port), siConstants.siWarning)
+				"%s | Cannot start server, a connection is already opened on port '%s'!" % (self.__class__.__name__, self, self.__port), siConstants.siWarning)
 			else:
-				raise error
-	
+				raise socket.error
+
 	def stop(self):
 		if not self.__online:
-			raise ServerOperationError("{0} | '{1}' server is not online!".format(self.__class__.__name__, self))
+			raise ServerOperationError("%s | '%s' server is not online!" % (self.__class__.__name__, self))
 
 		self.__server.shutdown()
 		self.__server = None
 		self.__worker = None
 		self.__online = False
-		Application.LogMessage("{0} | Server successfully stopped!".format(self.__class__.__name__), siConstants.siInfo)
+		Application.LogMessage("%s | Server successfully stopped!" % (self.__class__.__name__), siConstants.siInfo)
 		return True
-	
+
 def XSILoadPlugin(pluginRegistrar):
 	pluginRegistrar.Author = Constants.author
 	pluginRegistrar.Name = Constants.name
@@ -391,7 +380,7 @@ def XSILoadPlugin(pluginRegistrar):
 	pluginRegistrar.Major = Constants.majorVersion
 	pluginRegistrar.Minor = Constants.minorVersion
 
-	pluginRegistrar.RegisterEvent("TCPServer_startupEvent", siConstants.siOnStartup)	
+	pluginRegistrar.RegisterEvent("TCPServer_startupEvent", siConstants.siOnStartup)
 	pluginRegistrar.RegisterCommand("TCPServer_start", "TCPServer_start")
 	pluginRegistrar.RegisterCommand("TCPServer_stop", "TCPServer_stop")
 	pluginRegistrar.RegisterTimerEvent("TCPServer_timerEvent", 250, 0)
@@ -399,47 +388,41 @@ def XSILoadPlugin(pluginRegistrar):
 
 	pluginRegistrar.RegisterProperty("TCPServer_property");
 
-	Application.LogMessage("'{0}' has been loaded!".format(pluginRegistrar.Name))
+	Application.LogMessage("'%s' has been loaded!" % pluginRegistrar.Name)
 	return True
 
 def XSIUnloadPlugin(pluginRegistrar):
 	_stopServer()
-	Application.LogMessage("'{0}' has been unloaded!".format(pluginRegistrar.Name))
+	Application.LogMessage("'%s' has been unloaded!" % pluginRegistrar.Name)
 	return True
 
 def TCPServer_startupEvent_OnEvent(context):
-	Application.LogMessage("{0} | 'TCPServer_startupEvent_OnEvent' called!".format(
-	Constants.name), siConstants.siVerbose)
+	Application.LogMessage("%s | 'TCPServer_startupEvent_OnEvent' called!" % Constants.name, siConstants.siVerbose)
 	_registerSettingsProperty()
 	_restoreSettings()
 	_startServer()
 	return True
 
 def TCPServer_start_Init(context):
-	Application.LogMessage("{0} | 'TCPServer_start_Init' called!".format(
-	Constants.name), siConstants.siVerbose)
+	Application.LogMessage("%s | 'TCPServer_start_Init' called!" % Constants.name, siConstants.siVerbose)
 	return True
 
 def TCPServer_start_Execute():
-	Application.LogMessage("{0} | 'TCPServer_start_Execute' called!".format(
-	Constants.name), siConstants.siVerbose)
+	Application.LogMessage("%s | 'TCPServer_start_Execute' called!" % Constants.name, siConstants.siVerbose)
 	_startServer()
 	return True
 
 def TCPServer_stop_Init(context):
-	Application.LogMessage("{0} | 'TCPServer_stop_Init' called!".format(
-	Constants.name), siConstants.siVerbose)
+	Application.LogMessage("%s | 'TCPServer_stop_Init' called!" % Constants.name, siConstants.siVerbose)
 	return True
 
 def TCPServer_stop_Execute():
-	Application.LogMessage("{0} | 'TCPServer_stop_Execute' called!".format(
-	Constants.name), siConstants.siVerbose)
+	Application.LogMessage("%s | 'TCPServer_stop_Execute' called!" % Constants.name, siConstants.siVerbose)
 	_stopServer()
 	return True
 
 def TCPServer_timerEvent_OnEvent(context):
-	# Application.LogMessage("{0} | 'TCPServer_timerEvent' called!".format(
-	# Constants.name), siConstants.siVerbose)
+	# Application.LogMessage("%s | 'TCPServer_timerEvent' called!" % Constants.name, siConstants.siVerbose)
 	Runtime.requestsHandler.processData()
 	return False
 
@@ -476,7 +459,7 @@ def TCPServer_property_DefineLayout(context):
 	layout.AddItem("Port_siInt", "Port")
 	requestsHandlers = [requestsHandler.__name__ for requestsHandler in _getRequestsHandlers()]
 	layout.AddEnumControl("RequestsHandlers_siInt",
-						list(itertools.chain.from_iterable(zip(requestsHandlers, range(len(requestsHandlers))))),
+						sum(map(list, zip(requestsHandlers,requestsHandlers)), []),
 						"Requests Handlers", siConstants.siControlCombo)
 	layout.EndGroup()
 
@@ -484,7 +467,7 @@ def TCPServer_property_DefineLayout(context):
 	layout.AddRow()
 	layout.AddButton("Start_Server_button", "Start TCPServer")
 	layout.AddGroup()
-	layout.EndGroup()	
+	layout.EndGroup()
 	layout.AddButton("Stop_Server_button", "Stop TCPServer")
 	layout.EndRow()
 	layout.EndGroup()
@@ -546,23 +529,21 @@ def _registerSettingsProperty():
 								siConstants.siInt4,
 								_getRequestsHandlers().index(Constants.defaultRequestsHandler))
 		Application.InstallCustomPreferences("TCPServer_settings_property", "TCPServer_settings_property")
-	return True 
+	return True
 
 def _storeSettings():
 	if Application.Preferences.Categories(Constants.settings):
-		Application.preferences.SetPreferenceValue("{0}.Address_siString".format(Constants.settings), Runtime.address)
-		Application.preferences.SetPreferenceValue("{0}.Port_siInt".format(Constants.settings), Runtime.port)
-		Application.preferences.SetPreferenceValue(
-		"{0}.RequestsHandler_siInt".format(Constants.settings), _getRequestsHandlers().index(Runtime.requestsHandler))
-	return True 
+		Application.preferences.SetPreferenceValue("%s.Address_siString" % Constants.settings, Runtime.address)
+		Application.preferences.SetPreferenceValue("%s.Port_siInt" % Constants.settings, Runtime.port)
+		Application.preferences.SetPreferenceValue("%s.RequestsHandler_siInt" % Constants.settings, _getRequestsHandlers().index(Runtime.requestsHandler))
+	return True
 
 def _restoreSettings():
 	if Application.Preferences.Categories(Constants.settings):
-		Runtime.address = str(Application.preferences.GetPreferenceValue("{0}.Address_siString".format(Constants.settings)))
-		Runtime.port = int(Application.preferences.GetPreferenceValue("{0}.Port_siInt".format(Constants.settings)))
-		Runtime.requestsHandler = _getRequestsHandlers()[int(Application.preferences.GetPreferenceValue(
-		"{0}.RequestsHandler_siInt".format(Constants.settings)))]
-	return True 
+		Runtime.address = str(Application.preferences.GetPreferenceValue("%s.Address_siString" % Constants.settings))
+		Runtime.port = int(Application.preferences.GetPreferenceValue("%s.Port_siInt" % Constants.settings))
+		Runtime.requestsHandler = _getRequestsHandlers()[int(Application.preferences.GetPreferenceValue("%s.RequestsHandler_siInt" % Constants.settings))]
+	return True
 
 def _getServer(address, port, requestsHandler):
 	return TCPServer(address, port, requestsHandler)
@@ -570,7 +551,7 @@ def _getServer(address, port, requestsHandler):
 def _startServer():
 	if Runtime.server:
 		if Runtime.server.online:
-			Application.LogMessage("{0} | The server is already online!".format(Constants.name), siConstants.siWarning)
+			Application.LogMessage("%s | The server is already online!" % Constants.name, siConstants.siWarning)
 			return
 
 	Runtime.server = _getServer(Runtime.address, Runtime.port, Runtime.requestsHandler)
@@ -580,7 +561,7 @@ def _startServer():
 def _stopServer():
 	if Runtime.server:
 		if not Runtime.server.online:
-			Application.LogMessage("{0} | The server is not online!".format(Constants.name), siConstants.siWarning)
+			Application.LogMessage("%s | The server is not online!" % Constants.name, siConstants.siWarning)
 			return
 
 	Runtime.server and Runtime.server.stop()
@@ -611,7 +592,7 @@ def _getRequestsHandlers():
 		object = getattr(module, attribute)
 		if not inspect.isclass(object):
 			continue
-		
+
 		if issubclass(object, SocketServer.BaseRequestHandler):
 			requestsHandlers.append(object)
 	return sorted(requestsHandlers, key=lambda x:x.__name__)
