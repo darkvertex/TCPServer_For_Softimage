@@ -113,6 +113,8 @@ import os
 import re
 import socket
 import threading
+import time
+import ConfigParser
 from win32com.client import constants as siConstants
 
 #**********************************************************************************************************************
@@ -201,7 +203,7 @@ class DefaultStackDataRequestsHandler(SocketServer.BaseRequestHandler):
 			data = Runtime.requestsStack.popleft().strip()
 			if os.path.exists(data):
 				value = Application.ExecuteScript(data)
-				Application.LogMessage("%s | Request return value: '%s'." % (Constants.name, value), siConstants.siVerbose)
+				# Application.LogMessage("%s | Request return value: '%s'." % (Constants.name, value), siConstants.siVerbose)
 			else:
 				for language in Constants.languages:
 					match = re.match(r"\s*(?P<language>%s)\s*\|(?P<code>.*)" % language, data)
@@ -373,6 +375,61 @@ class TCPServer(object):
 		Application.LogMessage("%s | Server successfully stopped!" % (self.__class__.__name__), siConstants.siInfo)
 		return True
 
+
+def _getServerStatusFilePath():
+	"""
+	Returns the expected path to tcpserver.ini
+	"""
+	return XSIUtils.BuildPath( XSIUtils.Environment('TEMP'), 'tcpserver.ini')
+
+def _setServerStatusFile(**kwargs):
+	"""
+	Writes the tcpserver.ini file, such as:
+
+		[info]
+		active=1
+		handler=DefaultStackDataRequestsHandler
+		address=127.0.0.1
+		port=22778
+		touched=<time>
+		xsibooted=<time>
+		started=<time>
+
+	"""
+	config = ConfigParser.ConfigParser()
+	sect = 'info'
+	config.add_section(sect)
+
+	kwargs['active'] = kwargs.setdefault('active', 0)
+	kwargs['touched'] = int(time.time())
+	# kwargs['port'] = kwargs.setdefault('port', Constants.defaultPort)
+	# kwargs['address'] = kwargs.setdefault('address', Constants.defaultAddress)
+	# kwargs['handler'] = kwargs.setdefault('handler', Constants.defaultRequestsHandler)
+
+	for key, val in kwargs.items():
+		config.set(sect, key, val)
+
+	configFile = open( _getServerStatusFilePath(), 'wb' )
+	config.write(configFile)
+	configFile.close()
+	return True
+
+def _getServerStatusFileData():
+	"""
+	Reads the server status .ini file as a dictionary.
+	"""
+	path = _getServerStatusFilePath()
+	if not os.path.exists(path):
+		return False
+
+	config = ConfigParser.ConfigParser()
+	config.read(path)
+	section = 'info'
+	data = dict([ (option, config.get(section, option)) for option in config.options(section) ])
+
+	return data
+
+
 def XSILoadPlugin(pluginRegistrar):
 	pluginRegistrar.Author = Constants.author
 	pluginRegistrar.Name = Constants.name
@@ -401,6 +458,7 @@ def TCPServer_startupEvent_OnEvent(context):
 	Application.LogMessage("%s | 'TCPServer_startupEvent_OnEvent' called!" % Constants.name, siConstants.siVerbose)
 	_registerSettingsProperty()
 	_restoreSettings()
+	_setServerStatusFile( xsibooted=time.time() )
 	_startServer()
 	return True
 
@@ -557,6 +615,7 @@ def _startServer():
 
 	Runtime.server = _getServer(Runtime.address, Runtime.port, Runtime.requestsHandler)
 	Runtime.server.start()
+	_setServerStatusFile(active=1, address=Runtime.address, port=Runtime.port, handler=Runtime.requestsHandler)
 	return True
 
 def _stopServer():
@@ -566,6 +625,7 @@ def _stopServer():
 			return
 
 	Runtime.server and Runtime.server.stop()
+	_setServerStatusFile(active=0)
 	return True
 
 def _restartServer():
