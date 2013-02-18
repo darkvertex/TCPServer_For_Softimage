@@ -354,8 +354,9 @@ class TCPServer(object):
 			"%s | Server successfully started on '%s' address and '%s' port using '%s' requests handler!" % (self.__class__.__name__, self.__address, self.__port, self.__handler.__name__),
 			siConstants.siInfo)
 			return True
-		except socket.error:
-			if socket.error.errno == 10048:
+		except socket.error, ex:
+			error_number, error_message = ex
+			if error_number == 10048:
 				Application.LogMessage(
 				"%s | Cannot start server, a connection is already opened on port '%s'!" % (self.__class__.__name__, self, self.__port), siConstants.siWarning)
 			else:
